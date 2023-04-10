@@ -198,10 +198,46 @@ app.post("/insert/cart", function (req, res) {
   );
 });
 
-app.put("/update/cart/:id", function (req, res) {
-  let livestock_animal_id = req.body.livestock_animal_id;
-  let quantity = req.body.quantity;
+app.get("/cart/checkCart/:id/:animal_id", function (req, res) {
+  conn.query(
+    "SELECT * FROM cart WHERE user_id = ? AND livestock_animal_id = ?",
+    [req.params.id, req.params.animal_id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
+    }
+  );
+});
 
+app.get("/cart/retrieveAll/:id", function (req, res) {
+  conn.query(
+    "SELECT * FROM cart INNER JOIN animal_category on animal_category.livestock_animal_id = cart.livestock_animal_id WHERE cart.user_id = ?",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error retrieving animals" });
+      } else {
+        // Map the rows to include the base64 encoded photo instead of the buffer
+        const animals = rows.map((row) => ({
+          ...row,
+          livestock_animal_photo: row.livestock_animal_photo.toString("base64"),
+        }));
+
+        res.json({ animals });
+      }
+    }
+  );
+});
+
+app.put("/update/cart/:id", function (req, res) {
+  const livestock_animal_id = req.body.livestock_animal_id;
+  const quantity = req.body.quantity;
+  
   if (quantity === 0) {
     conn.query(
       "DELETE FROM cart WHERE livestock_animal_id = ? AND user_id = ?",
@@ -319,7 +355,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 app.post("/animal/insertAnimal", upload.single("image"), function (req, res) {
   const toDate = new Date();
-  const { user_id, animal_name, animal_type, animal_detail, stock } = req.body;
+  const { user_id, animal_name, animal_type, animal_detail, stock, price } =
+    req.body;
 
   const animal_photo = req.file ? req.file.buffer : null;
 
@@ -327,13 +364,14 @@ app.post("/animal/insertAnimal", upload.single("image"), function (req, res) {
   const updated_at = toDate;
 
   conn.query(
-    "INSERT INTO animal_category (user_id, livestock_animal_name, livestock_animal_type, livestock_animal_detail, livestock_animal_photo, livestock_animal_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO animal_category (user_id, livestock_animal_name, livestock_animal_type, livestock_animal_detail, livestock_animal_photo, livestock_animal_price, livestock_animal_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
       user_id,
       animal_name,
       animal_type,
       animal_detail,
       animal_photo,
+      price,
       stock,
       created_at,
       updated_at,
@@ -349,6 +387,43 @@ app.post("/animal/insertAnimal", upload.single("image"), function (req, res) {
     }
   );
 });
+
+app.put(
+  "/animal/updateAnimal/:id",
+  upload.single("image"),
+  function (req, res) {
+    const toDate = new Date();
+    const animal_name = req.body.animal_name;
+    const animal_type = req.body.animal_type;
+    const animal_detail = req.body.animal_detail;
+    const animal_photo = req.file ? req.file.buffer : null;
+    const price = req.body.animal_price;
+    const stock = req.body.stock;
+    const updated_at = toDate;
+
+    conn.query(
+      "UPDATE animal_category SET livestock_animal_name = ? , livestock_animal_type = ?, livestock_animal_detail = ?, livestock_animal_photo = ?, livestock_animal_price = ? , livestock_animal_stock =? , updated_at = ? WHERE livestock_animal_id = ? ",
+      [
+        animal_name,
+        animal_type,
+        animal_detail,
+        animal_photo,
+        price,
+        stock,
+        updated_at,
+        req.params.id,
+      ],
+      function (error, rows, fields) {
+        if (error) throw error;
+        else {
+          res.send(rows);
+          console.log(rows);
+          res.end();
+        }
+      }
+    );
+  }
+);
 
 app.delete("/animal/deleteAnimal/:id", function (req, res) {
   conn.query(
@@ -382,35 +457,25 @@ app.get("/animal/retrieveById/:id", function (req, res) {
 
 app.get("/animal/retrieveAll/", function (req, res) {
   conn.query("SELECT * FROM animal_category", function (error, rows, fields) {
-    if (error) throw error;
-    else {
-      res.send(rows);
-      console.log(rows);
-      res.end();
+    if (error) {
+      console.error(error);
+      res.status(500).json({ error: "Error retrieving animals" });
+    } else {
+      // Map the rows to include the base64 encoded photo instead of the buffer
+      const animals = rows.map((row) => ({
+        ...row,
+        livestock_animal_photo: row.livestock_animal_photo.toString("base64"),
+      }));
+
+      res.json({ animals });
     }
   });
 });
 
-app.put("/animal/updateAnimal/:id", function (req, res) {
-  const toDate = new Date();
-  const animal_name = req.body.animal_name;
-  const animal_type = req.body.animal_type;
-  const animal_detail = req.body.animal_detail;
-  const animal_photo = req.body.animal_photo;
-  const stock = req.body.stock;
-  const updated_at = toDate;
-
+app.get("/comment/retrieveByAnimal/:id", function (req, res) {
   conn.query(
-    "UPDATE animal_category SET livestock_animal_name = ? , livestock_animal_type = ?, livestock_animal_detail = ?, livestock_animal_photo = ? , livestock_animal_stock =? , updated_at = ? WHERE livestock_animal_id = ? ",
-    [
-      animal_name,
-      animal_type,
-      animal_detail,
-      animal_photo,
-      stock,
-      updated_at,
-      req.params.id,
-    ],
+    "SELECT * FROM COMMENT INNER JOIN user ON user.user_id = COMMENT.user_id  WHERE COMMENT.livestock_animal_id = ? ORDER BY COMMENT.created_at ASC",
+    [req.params.id],
     function (error, rows, fields) {
       if (error) throw error;
       else {
