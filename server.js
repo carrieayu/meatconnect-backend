@@ -140,6 +140,85 @@ app.post("/user/update", function (req, res) {
   );
 });
 
+app.put("/user/deactivate/:id", function (req, res) {
+  conn.query(
+    "DELETE FROM user WHERE user_id = ? ",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        console.log(rows);
+        conn.query(
+          "DELETE FROM animal_category WHERE user_id = ?",
+          [req.params.id],
+          function (aniError, aniRows, aniFields) {
+            if (aniError) throw aniError;
+            else {
+              console.log(aniRows);
+              conn.query(
+                "DELETE FROM billing WHERE user_id = ?",
+                [req.params.id],
+                function (billError, billRows, billFields) {
+                  if (billError) throw billError;
+                  else {
+                    console.log(billRows);
+                    conn.query(
+                      "DELETE FROM cart WHERE user_id = ? ",
+                      [req.params.id],
+                      function (cartError, cartRows, cartFields) {
+                        if (cartError) throw cartError;
+                        else {
+                          console.log(cartRows);
+                          conn.query(
+                            "DELETE FROM comment WHERE user_id = ? ",
+                            [req.params.id],
+                            function (commError, commRows, commFields) {
+                              if (commError) throw commError;
+                              else {
+                                console.log(commRows);
+                                conn.query(
+                                  "DELETE FROM message WHERE receiver_id = ? OR sender_id = ? ",
+                                  [req.params.id, req.params.id],
+                                  function (messError, messRows, messFields) {
+                                    if (messError) throw messError;
+                                    else {
+                                      console.log(messRows);
+                                      conn.query(
+                                        "DELETE FROM `order` WHERE user_id = ?",
+                                        [req.params.id],
+                                        function (
+                                          orderError,
+                                          orderRows,
+                                          orderFields
+                                        ) {
+                                          if (orderError) throw orderError;
+                                          else {
+                                            console.log(orderRows);
+                                            res.send(rows);
+                                            res.end();
+                                          }
+                                        }
+                                      );
+                                    }
+                                  }
+                                );
+                              }
+                            }
+                          );
+                        }
+                      }
+                    );
+                  }
+                }
+              );
+            }
+          }
+        );
+      }
+    }
+  );
+});
+
 app.get("/user/retrieve", function (req, res) {
   conn.query("SELECT * FROM user", function (error, rows, fields) {
     if (error) throw error;
@@ -237,7 +316,7 @@ app.get("/cart/retrieveAll/:id", function (req, res) {
 app.put("/update/cart/:id", function (req, res) {
   const livestock_animal_id = req.body.livestock_animal_id;
   const quantity = req.body.quantity;
-  
+
   if (quantity === 0) {
     conn.query(
       "DELETE FROM cart WHERE livestock_animal_id = ? AND user_id = ?",
@@ -296,6 +375,18 @@ app.get("/chat/retrieveAllMessage/:id", function (req, res) {
     }
   );
 });
+
+app.delete("/chat/deleteChat/:id", function(req, res) {
+  conn.query("DELETE FROM message WHERE message_id = ?", 
+  [req.params.id], function(error, rows, fields){
+    if(error) throw error;
+    else{
+      res.send(rows);
+      console.log(rows);
+      res.end();
+    }
+  })
+})
 
 app.get("/chat/retrieveMessage/:receiver_id/:sender_id", function (req, res) {
   conn.query(
@@ -425,6 +516,26 @@ app.put(
   }
 );
 
+app.put("/animal/updateStock/:id", function (req, res) {
+  const user_id = req.params.id;
+  const livestock_animal_id = req.body.livestock_animal_id;
+  const quantity = req.body.quantity;
+  const updated_at = new Date();
+
+  conn.query(
+    "UPDATE animal_category SET livestock_animal_stock = ?, updated_at = ? WHERE user_id = ? AND livestock_animal_id = ?",
+    [quantity, updated_at, user_id, livestock_animal_id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
+    }
+  );
+});
+
 app.delete("/animal/deleteAnimal/:id", function (req, res) {
   conn.query(
     "DELETE FROM animal_category WHERE livestock_animal_id = ?",
@@ -450,6 +561,35 @@ app.get("/animal/retrieveById/:id", function (req, res) {
         res.send(rows);
         console.log(rows);
         res.end();
+      }
+    }
+  );
+});
+
+app.get("/animal/retrieveByTyp/:type", function (req, res) {
+  conn.query(
+    "SELECT * FROM animal_category WHERE livestock_animal_type = ?",
+    [req.params.type],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        console.log(rows);
+        res.send(rows);
+        res.end();
+      }
+    }
+  );
+});
+
+app.get("/animal/retrieveByIdAndRatings/:id", function (req, res) {
+  conn.query(
+    "SELECT * FROM animal_category INNER JOIN user_rating ON user_rating.livestock_animal_id = animal_category.livestock_animal_id INNER JOIN comment ON comment.livestock_animal_id = animal_category.livestock_animal_id WHERE animal_category.livestock_animal_id = ?",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
       }
     }
   );
@@ -481,6 +621,296 @@ app.get("/comment/retrieveByAnimal/:id", function (req, res) {
       else {
         res.send(rows);
         console.log(rows);
+        res.end();
+      }
+    }
+  );
+});
+
+app.post("/comment/addComment/:user_id", function (req, res) {
+  let animal_id = req.body.livestock_animal_id;
+  let message = req.body.message;
+  let created_at = new Date();
+  let updated_at = new Date();
+
+  conn.query(
+    "INSERT INTO comment(comment_message, user_id, livestock_animal_id, created_at, updated_at) VALUES(?,?,?,?,?)",
+    [message, req.params.user_id, animal_id, created_at, updated_at],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
+    }
+  );
+});
+
+app.post("/billing/saveBilling/:id", function (req, res) {
+  const user_id = req.params.id;
+  const {
+    payment_id,
+    first_name,
+    last_name,
+    email,
+    address,
+    addressTwo,
+    country,
+    state,
+    zip,
+    phone,
+  } = req.body;
+  const created_at = new Date();
+  const updated_at = new Date();
+
+  conn.query(
+    "INSERT INTO billing(user_id, payment_id, first_name, last_name, email, address, addressTwo, country, state, zip, phone, created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    [
+      user_id,
+      payment_id,
+      first_name,
+      last_name,
+      email,
+      address,
+      addressTwo,
+      country,
+      state,
+      zip,
+      phone,
+      created_at,
+      updated_at,
+    ],
+    function (error, rows, fields) {
+      if (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error inserting billing " });
+      } else {
+        conn.query(
+          "SELECT * FROM billing WHERE billing_id = (SELECT MAX(billing_id) FROM billing)",
+          function (errors, row, field) {
+            if (errors) {
+              console.error(errors);
+              res.status(500).json({
+                error: "Error Retrieving the last Billing data",
+              });
+            } else {
+              console.log(row);
+              res.send(row);
+              res.end();
+            }
+          }
+        );
+      }
+    }
+  );
+});
+
+app.post("/payment/insertPayment", function (req, res) {
+  const {
+    payment_type,
+    card_number,
+    card_expiry_date,
+    card_full_name,
+    card_cvv,
+  } = req.body;
+  const created_at = new Date();
+  const updated_at = new Date();
+
+  conn.query(
+    "INSERT INTO payment_method(payment_type, card_number, card_expiry_date, card_full_name, card_cvv, created_at, updated_at) VALUES(?,?,?,?,?,?,?)",
+    [
+      payment_type,
+      card_number,
+      card_expiry_date,
+      card_full_name,
+      card_cvv,
+      created_at,
+      updated_at,
+    ],
+    function (error, rows, fields) {
+      if (error) {
+        console.error(error);
+        res.status(500).json({
+          error: "Error inserting billing ",
+        });
+      } else {
+        conn.query(
+          "SELECT * FROM payment_method WHERE payment_id = (SELECT MAX(payment_id) FROM payment_method)",
+          function (errors, row, field) {
+            if (errors) {
+              console.error(errors);
+              res.status(500).json({
+                error: "Error Retrieving the last data",
+              });
+            } else {
+              console.log(row);
+              res.send(row);
+              res.end();
+            }
+          }
+        );
+      }
+    }
+  );
+});
+
+app.post("/order/insertOrder/:id", function (req, res) {
+  const {
+    order_number,
+    user_id,
+    livestock_animal_id,
+    billing_id,
+    quantity,
+    price,
+  } = req.body;
+  const arrived_date = new Date();
+  const created_at = new Date();
+  const updated_at = new Date();
+  conn.query(
+    "INSERT INTO `order`(order_number, user_id, livestock_animal_id, billing_id, quantity, price, arrived_date, created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?)",
+    [
+      order_number,
+      parseInt(user_id, 10),
+      livestock_animal_id,
+      billing_id,
+      quantity,
+      price,
+      arrived_date,
+      created_at,
+      updated_at,
+    ],
+    function (error, rows, fields) {
+      if (error) {
+        console.error(error);
+        res.status(500).json({
+          error: "Error Retrieving the last data",
+        });
+      } else {
+        console.log(rows);
+        conn.query(
+          "SELECT * FROM animal_category WHERE user_id = ? AND livestock_animal_id = ?",
+          [user_id, livestock_animal_id],
+          function (aniError, aniRow, aniField) {
+            if (aniError) {
+              console.error(aniError);
+              res.status(500).json({
+                error: "Error retrieving animal Category",
+              });
+            } else {
+              console.log(aniRow[0].livestock_animal_stock);
+              conn.query(
+                "UPDATE animal_category SET livestock_animal_stock = ? WHERE user_id = ? AND livestock_animal_id = ?",
+                [
+                  aniRow[0].livestock_animal_stock - quantity,
+                  user_id,
+                  livestock_animal_id,
+                ],
+                function (errors, row, field) {
+                  if (errors) {
+                    console.error(errors);
+                    res.status(500).json({
+                      error: "Error Updated animal category",
+                    });
+                  } else {
+                    console.log(row);
+                    conn.query(
+                      "DELETE FROM cart WHERE cart_id = ?",
+                      [req.params.id],
+                      function (cartError, cartRow, cartField) {
+                        if (cartError) {
+                          console.error(cartError);
+                          cartRow.status(500).json({
+                            error: "Error deleting Card",
+                          });
+                        } else {
+                          console.log(cartRow);
+                          res.send(cartRow);
+                          res.end();
+                        }
+                      }
+                    );
+                  }
+                }
+              );
+            }
+          }
+        );
+      }
+    }
+  );
+});
+
+app.post("/insert/report/:reporter_id/:reported_id", function (req, res) {
+  const created_at = new Date();
+  const updated_at = new Date();
+  conn.query(
+    "INSERT INTO report(reported_id, reporter_id, created_at, updated_at) VALUES(?,?,?,?)",
+    [req.params.reporter_id, req.params.reported_id, created_at, updated_at],
+    function (error, rows, field) {
+      if (error) throw error;
+      else {
+        console.log(rows);
+        res.send(rows);
+        res.end();
+      }
+    }
+  );
+});
+
+app.post("/insert/userRating/:id", function (req, res) {
+  let animal_id = req.body.livestock_animal_id;
+  let rate = req.body.rating;
+  let created_at = new Date();
+  let updated_at = new Date();
+
+  conn.query(
+    "SELECT * FROM user_rating WHERE user_id = ? AND livestock_animal_id = ?",
+    [req.params.id, animal_id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        if (rows.length === 0) {
+          conn.query(
+            "INSERT INTO user_rating(user_id, livestock_animal_id, rating_star, created_at, updated_at) VALUES(?,?,?,?,?)",
+            [req.params.id, animal_id, rate, created_at, updated_at],
+            function (insRateError, insRateRows, fields) {
+              if (insRateError) throw insRateError;
+              else {
+                res.send(insRateRows);
+                console.log(insRateRows);
+                res.end();
+              }
+            }
+          );
+        } else {
+          conn.query(
+            "UPDATE user_rating SET rating_star = ? WHERE user_id = ? AND livestock_animal_id = ?",
+            [rate, req.params.id, animal_id],
+            function (upadteError, updateRows, fields) {
+              if (upadteError) throw upadteError;
+              else {
+                res.send(updateRows);
+                console.log(updateRows);
+                res.end();
+              }
+            }
+          );
+        }
+      }
+    }
+  );
+});
+
+app.get("/get/ratings/:id", function (req, res) {
+  conn.query(
+    "SELECT * FROM user_rating WHERE livestock_animal_id = ?",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        console.log(rows);
+        res.send(rows);
         res.end();
       }
     }
