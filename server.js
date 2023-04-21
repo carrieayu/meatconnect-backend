@@ -376,17 +376,20 @@ app.get("/chat/retrieveAllMessage/:id", function (req, res) {
   );
 });
 
-app.delete("/chat/deleteChat/:id", function(req, res) {
-  conn.query("DELETE FROM message WHERE message_id = ?", 
-  [req.params.id], function(error, rows, fields){
-    if(error) throw error;
-    else{
-      res.send(rows);
-      console.log(rows);
-      res.end();
+app.delete("/chat/deleteChat/:id", function (req, res) {
+  conn.query(
+    "DELETE FROM message WHERE message_id = ?",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
     }
-  })
-})
+  );
+});
 
 app.get("/chat/retrieveMessage/:receiver_id/:sender_id", function (req, res) {
   conn.query(
@@ -627,6 +630,21 @@ app.get("/comment/retrieveByAnimal/:id", function (req, res) {
   );
 });
 
+app.delete("/comment/deleteComment/:id", function (req, res) {
+  conn.query(
+    "DELETE FROM comment WHERE comment_id = ? ",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
+    }
+  );
+});
+
 app.post("/comment/addComment/:user_id", function (req, res) {
   let animal_id = req.body.livestock_animal_id;
   let message = req.body.message;
@@ -768,7 +786,7 @@ app.post("/order/insertOrder/:id", function (req, res) {
   const created_at = new Date();
   const updated_at = new Date();
   conn.query(
-    "INSERT INTO `order`(order_number, user_id, livestock_animal_id, billing_id, quantity, price, arrived_date, created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?)",
+    "INSERT INTO `order`(order_number, user_id, livestock_animal_id, billing_id, quantity, price, status, arrived_date, created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
     [
       order_number,
       parseInt(user_id, 10),
@@ -776,6 +794,7 @@ app.post("/order/insertOrder/:id", function (req, res) {
       billing_id,
       quantity,
       price,
+      'To Ship',
       arrived_date,
       created_at,
       updated_at,
@@ -789,8 +808,8 @@ app.post("/order/insertOrder/:id", function (req, res) {
       } else {
         console.log(rows);
         conn.query(
-          "SELECT * FROM animal_category WHERE user_id = ? AND livestock_animal_id = ?",
-          [user_id, livestock_animal_id],
+          "SELECT * FROM animal_category WHERE livestock_animal_id = ?",
+          [livestock_animal_id],
           function (aniError, aniRow, aniField) {
             if (aniError) {
               console.error(aniError);
@@ -916,3 +935,53 @@ app.get("/get/ratings/:id", function (req, res) {
     }
   );
 });
+
+app.post("/rate/rateUser/:id", function (req, res) {
+  const rater_id = req.body.rater_id;
+  const rate = req.body.rate;
+  const created_at = new Date();
+  const updated_at = new Date();
+
+  conn.query(
+    "INSERT INTO ratings(user_id, rater_id, rate, created_at, updated_at) VALUES(?,?,?,?,?)",
+    [req.params.id, rater_id, rate, created_at, updated_at],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
+    }
+  );
+});
+
+app.get("/order/retrieveByUser/:id", function(req, res) {
+  conn.query(
+    "SELECT * FROM `order` INNER JOIN user ON user.user_id = `order`.user_id INNER JOIN animal_category ON animal_category.livestock_animal_id = `order`.livestock_animal_id INNER JOIN billing ON billing.billing_id = `order`.billing_id WHERE `order`.user_id = ?",
+    [req.params.id],
+    function(error, rows, fields) {
+      if(error) throw error;
+      else{
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
+    }
+  )
+})
+
+app.get("/order/retrieveHistory/:id", function(req, res) {
+  conn.query(
+    "SELECT * FROM `order` INNER JOIN user ON user.user_id = `order`.user_id INNER JOIN animal_category ON animal_category.livestock_animal_id = `order`.livestock_animal_id INNER JOIN billing ON billing.billing_id = `order`.billing_id WHERE `order`.user_id = ? AND `order`.status = ?",
+    [req.params.id, 'Delivered'],
+    function(error, rows, fields) {
+      if(error) throw error;
+      else{
+        res.send(rows);
+        console.log(rows);
+        res.end();
+      }
+    }
+  )
+})
