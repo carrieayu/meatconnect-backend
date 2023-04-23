@@ -294,7 +294,7 @@ app.get("/cart/checkCart/:id/:animal_id", function (req, res) {
 
 app.get("/cart/retrieveAll/:id", function (req, res) {
   conn.query(
-    "SELECT * FROM cart INNER JOIN animal_category on animal_category.livestock_animal_id = cart.livestock_animal_id WHERE cart.user_id = ?",
+    "SELECT DISTINCT  * FROM cart INNER JOIN animal_category on animal_category.livestock_animal_id = cart.livestock_animal_id WHERE cart.user_id = ?",
     [req.params.id],
     function (error, rows, fields) {
       if (error) {
@@ -313,10 +313,24 @@ app.get("/cart/retrieveAll/:id", function (req, res) {
   );
 });
 
+app.delete("/cart/delete/:id", function (req, res) {
+  conn.query(
+    "DELETE FROM cart WHERE cart_id = ? ",
+    [req.params.id]
+  ),
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    };
+});
+
 app.put("/update/cart/:id", function (req, res) {
   const livestock_animal_id = req.body.livestock_animal_id;
   const quantity = req.body.quantity;
-
+ 
+  
   if (quantity === 0) {
     conn.query(
       "DELETE FROM cart WHERE livestock_animal_id = ? AND user_id = ?",
@@ -326,8 +340,6 @@ app.put("/update/cart/:id", function (req, res) {
         if (error) throw error;
         else {
           res.send(rows);
-          console.log(rows);
-          res.end();
         }
       };
   } else {
@@ -337,9 +349,7 @@ app.put("/update/cart/:id", function (req, res) {
       function (error, rows, fields) {
         if (error) throw error;
         else {
-          res.send(rows);
-          console.log(rows);
-          res.send();
+          res.send(rows); 
         }
       }
     );
@@ -354,8 +364,6 @@ app.get("/user/retrieve/:id", function (req, res) {
       if (error) throw error;
       else {
         res.send(rows);
-        console.log(rows);
-        res.end();
       }
     }
   );
