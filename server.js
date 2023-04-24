@@ -34,7 +34,6 @@ app.listen(8080, () => {
 });
 
 app.post("/user/login", function (req, res) {
-  console.log(req);
   let username = req.body.username;
   let password = req.body.password;
 
@@ -60,7 +59,6 @@ app.post("/user/login", function (req, res) {
 });
 
 app.post("/user/register", function (req, res) {
-  console.log(req.bod);
   let progress = req.body.progress;
   let contacts = req.body.contacts;
   let address = req.body.address;
@@ -175,14 +173,12 @@ app.put("/user/deactivate/:id", function (req, res) {
                             function (commError, commRows, commFields) {
                               if (commError) throw commError;
                               else {
-                                console.log(commRows);
                                 conn.query(
                                   "DELETE FROM message WHERE receiver_id = ? OR sender_id = ? ",
                                   [req.params.id, req.params.id],
                                   function (messError, messRows, messFields) {
                                     if (messError) throw messError;
                                     else {
-                                      console.log(messRows);
                                       conn.query(
                                         "DELETE FROM `order` WHERE user_id = ?",
                                         [req.params.id],
@@ -193,7 +189,6 @@ app.put("/user/deactivate/:id", function (req, res) {
                                         ) {
                                           if (orderError) throw orderError;
                                           else {
-                                            console.log(orderRows);
                                             res.send(rows);
                                             res.end();
                                           }
@@ -802,7 +797,7 @@ app.post("/order/insertOrder/:id", function (req, res) {
       billing_id,
       quantity,
       price,
-      'To Ship',
+      'Pending',
       arrived_date,
       created_at,
       updated_at,
@@ -993,3 +988,89 @@ app.get("/order/retrieveHistory/:id", function(req, res) {
     }
   )
 })
+
+
+
+
+///GETE ALL ORDER IN Bu TAB
+
+  
+
+app.get("/order/getAllOrderByUser/:id",function (req, res){
+  conn.query(
+    "SELECT `order`.*, user.* FROM `order` INNER JOIN user ON `order`.user_id = user.user_id WHERE `order`.user_id = ? AND `order`.status != 'completed'",
+    [req.params.id,],
+    function(error, rows, fields) {
+      if(error) throw error;
+      else{
+        res.send(rows);
+        console.log(rows);
+      }
+    }
+  )
+} )
+
+// Seller tab
+
+app.get("/order/getAllOrderBySeller/:id",function (req, res){
+  conn.query(
+    "SELECT *FROM `order` INNER JOIN animal_category ON `order`.livestock_animal_id = animal_category.livestock_animal_id INNER JOIN user ON animal_category.user_id = user.user_id WHERE user.user_id = ?;",
+    [req.params.id,],
+    function(error, rows, fields) {
+      if(error) throw error;
+      else{
+        res.send(rows);
+      }
+    }
+  )
+} )
+
+
+app.get("/order/getAllOrderBySellers/:id",function (req, res){
+  conn.query(
+    "SELECT  `order`.* FROM `order` INNER JOIN animal_category ON `order`.livestock_animal_id = animal_category.livestock_animal_id INNER JOIN user ON animal_category.user_id = user.user_id WHERE user.user_id = ?;",
+    [req.params.id,],
+    function(error, rows, fields) {
+      if(error) throw error;
+      else{
+        res.send(rows);
+      }
+    }
+  )
+} )
+
+app.get("/order/getBuyerName/:id",function (req, res){
+  conn.query(
+    "SELECT *FROM user WHERE user_id = ?",
+    [req.params.id],
+    function(error, rows, fields) {
+      if(error) throw error;
+      else{
+        res.send(rows);
+      }
+    }
+  )
+} )
+
+app.put("/order/updataOrderStatus/:id",function (req, res){
+ let status =  req.body.status;
+ if(status === 'To ship'){
+ return status =  'Completed'
+ }
+ if(status === 'Pending'){
+  return status = 'To ship'
+ }
+
+
+  conn.query(
+    "UPDATE `order` SET status = ? WHERE order_id = ?",
+    [status, req.params.id,],
+    function(error, rows, fields) {
+      if(error) throw error;
+      else{
+        res.send(rows);
+      }
+    }
+  )
+} )
+
