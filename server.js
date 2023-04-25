@@ -1034,8 +1034,6 @@ app.put("/order/toShipStatus/:id",function (req, res){
  if(status === 'To ship'){
   status =  'Completed'
  }
-
-
   conn.query(
     "UPDATE `order` SET status = ? WHERE order_id = ?",
     [status, req.params.id,],
