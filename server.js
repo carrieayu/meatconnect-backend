@@ -1014,7 +1014,7 @@ app.get("/order/getAllOrderByUser/:id",function (req, res){
 
 app.get("/order/getAllOrderBySeller/:id",function (req, res){
   conn.query(
-    "SELECT *FROM `order` INNER JOIN animal_category ON `order`.livestock_animal_id = animal_category.livestock_animal_id INNER JOIN user ON animal_category.user_id = user.user_id WHERE user.user_id = ?;",
+    "SELECT o.order_id, o.order_number,o.status, o.price, o.quantity ,u.first_name, u.user_address, u.last_name, l.livestock_animal_name FROM `order` o JOIN user u ON o.user_id = u.user_id JOIN animal_category l ON o.livestock_animal_id = l.livestock_animal_id WHERE l.user_id  = ?",
     [req.params.id,],
     function(error, rows, fields) {
       if(error) throw error;
@@ -1025,40 +1025,14 @@ app.get("/order/getAllOrderBySeller/:id",function (req, res){
   )
 } )
 
-
-app.get("/order/getAllOrderBySellers/:id",function (req, res){
-  conn.query(
-    "SELECT  `order`.* FROM `order` INNER JOIN animal_category ON `order`.livestock_animal_id = animal_category.livestock_animal_id INNER JOIN user ON animal_category.user_id = user.user_id WHERE user.user_id = ?;",
-    [req.params.id,],
-    function(error, rows, fields) {
-      if(error) throw error;
-      else{
-        res.send(rows);
-      }
-    }
-  )
-} )
-
-app.get("/order/getBuyerName/:id",function (req, res){
-  conn.query(
-    "SELECT *FROM user WHERE user_id = ?",
-    [req.params.id],
-    function(error, rows, fields) {
-      if(error) throw error;
-      else{
-        res.send(rows);
-      }
-    }
-  )
-} )
-
-app.put("/order/updataOrderStatus/:id",function (req, res){
- let status =  req.body.status;
- if(status === 'To ship'){
- return status =  'Completed'
- }
+app.put("/order/toShipStatus/:id",function (req, res){
+  // BUYER: PENDING S: SEND ITEM B:TO SHIP B: COMPLETED S: COMPLETED
+ let status = req.body.status;
  if(status === 'Pending'){
-  return status = 'To ship'
+  status = 'To ship'
+}
+ if(status === 'To ship'){
+  status =  'Completed'
  }
 
 
