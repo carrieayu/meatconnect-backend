@@ -309,10 +309,7 @@ app.get("/cart/retrieveAll/:id", function (req, res) {
 });
 
 app.delete("/cart/delete/:id", function (req, res) {
-  conn.query(
-    "DELETE FROM cart WHERE cart_id = ? ",
-    [req.params.id]
-  ),
+  conn.query("DELETE FROM cart WHERE cart_id = ? ", [req.params.id]),
     function (error, rows, fields) {
       if (error) throw error;
       else {
@@ -324,8 +321,7 @@ app.delete("/cart/delete/:id", function (req, res) {
 app.put("/update/cart/:id", function (req, res) {
   const livestock_animal_id = req.body.livestock_animal_id;
   const quantity = req.body.quantity;
- 
-  
+
   if (quantity === 0) {
     conn.query(
       "DELETE FROM cart WHERE livestock_animal_id = ? AND user_id = ?",
@@ -344,7 +340,7 @@ app.put("/update/cart/:id", function (req, res) {
       function (error, rows, fields) {
         if (error) throw error;
         else {
-          res.send(rows); 
+          res.send(rows);
         }
       }
     );
@@ -797,7 +793,7 @@ app.post("/order/insertOrder/:id", function (req, res) {
       billing_id,
       quantity,
       price,
-      'Pending',
+      "Pending",
       arrived_date,
       created_at,
       updated_at,
@@ -959,90 +955,96 @@ app.post("/rate/rateUser/:id", function (req, res) {
   );
 });
 
-app.get("/order/retrieveByUser/:id", function(req, res) {
+app.get("/order/retrieveByUser/:id", function (req, res) {
   conn.query(
     "SELECT * FROM `order` INNER JOIN user ON user.user_id = `order`.user_id INNER JOIN animal_category ON animal_category.livestock_animal_id = `order`.livestock_animal_id INNER JOIN billing ON billing.billing_id = `order`.billing_id WHERE `order`.user_id = ?",
     [req.params.id],
-    function(error, rows, fields) {
-      if(error) throw error;
-      else{
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
         res.send(rows);
         console.log(rows);
         res.end();
       }
     }
-  )
-})
+  );
+});
 
-app.get("/order/retrieveHistory/:id", function(req, res) {
+app.get("/order/retrieveHistory/:id", function (req, res) {
   conn.query(
     "SELECT * FROM `order` INNER JOIN user ON user.user_id = `order`.user_id INNER JOIN animal_category ON animal_category.livestock_animal_id = `order`.livestock_animal_id INNER JOIN billing ON billing.billing_id = `order`.billing_id WHERE `order`.user_id = ? AND `order`.status = ?",
-    [req.params.id, 'Delivered'],
-    function(error, rows, fields) {
-      if(error) throw error;
-      else{
+    [req.params.id, "Delivered"],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
         res.send(rows);
         console.log(rows);
         res.end();
       }
     }
-  )
-})
-
-
-
+  );
+});
 
 ///GETE ALL ORDER IN Bu TAB
 
-  
-
-app.get("/order/getAllOrderByUser/:id",function (req, res){
+app.get("/order/getAllOrderByUser/:id", function (req, res) {
   conn.query(
     "SELECT `order`.*, user.* FROM `order` INNER JOIN user ON `order`.user_id = user.user_id WHERE `order`.user_id = ? AND `order`.status != 'completed'",
-    [req.params.id,],
-    function(error, rows, fields) {
-      if(error) throw error;
-      else{
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
         res.send(rows);
         console.log(rows);
       }
     }
-  )
-} )
+  );
+});
 
 // Seller tab
 
-app.get("/order/getAllOrderBySeller/:id",function (req, res){
+app.get("/order/getAllOrderBySeller/:id", function (req, res) {
   conn.query(
     "SELECT o.order_id, o.order_number,o.status, o.price, o.quantity ,u.first_name, u.user_address, u.last_name, l.livestock_animal_name FROM `order` o JOIN user u ON o.user_id = u.user_id JOIN animal_category l ON o.livestock_animal_id = l.livestock_animal_id WHERE l.user_id  = ?",
-    [req.params.id,],
-    function(error, rows, fields) {
-      if(error) throw error;
-      else{
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
         res.send(rows);
       }
     }
-  )
-} )
+  );
+});
 
-app.put("/order/toShipStatus/:id",function (req, res){
+app.put("/order/toShipStatus/:id", function (req, res) {
   // BUYER: PENDING S: SEND ITEM B:TO SHIP B: COMPLETED S: COMPLETED
- let status = req.body.status;
- if(status === 'Pending'){
-  status = 'To ship'
-}
- if(status === 'To ship'){
-  status =  'Completed'
- }
+  let status = req.body.status;
+  if (status === "Pending") {
+    status = "To ship";
+  }
+  if (status === "To ship") {
+    status = "Completed";
+  }
   conn.query(
     "UPDATE `order` SET status = ? WHERE order_id = ?",
-    [status, req.params.id,],
-    function(error, rows, fields) {
-      if(error) throw error;
-      else{
+    [status, req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
         res.send(rows);
       }
     }
-  )
-} )
+  );
+});
 
+app.get("/ratings/retrieveAll", function (req, res) {
+  conn.query(
+    "SELECT * FROM user_rating INNER JOIN user ON user.user_id = user_rating.user_id INNER JOIN animal_category ON animal_category.livestock_animal_id = user_rating.livestock_animal_id",
+    function (error, rows, fields) {
+      if (error) throw WebGLVertexArrayObject;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
