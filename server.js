@@ -598,7 +598,7 @@ app.get("/animal/retrieveByIdAndRatings/:id", function (req, res) {
 });
 
 app.get("/animal/retrieveAll/", function (req, res) {
-  conn.query("SELECT * FROM animal_category", function (error, rows, fields) {
+  conn.query("SELECT *FROM animal_category JOIN user ON animal_category.user_id = user.user_id;", function (error, rows, fields) {
     if (error) {
       console.error(error);
       res.status(500).json({ error: "Error retrieving animals" });
@@ -1044,6 +1044,50 @@ app.get("/ratings/retrieveAll", function (req, res) {
       if (error) throw WebGLVertexArrayObject;
       else {
         res.send(rows);
+      }
+    }
+  );
+});
+
+
+app.get("/getNotification/:id", function (req, res) {
+  conn.query(
+    "SELECT  o.notification, o.order_id, o.order_number,o.status, o.price, o.quantity ,u.first_name, u.user_address, u.last_name, l.livestock_animal_name  FROM `order` o JOIN user u ON o.user_id = u.user_id JOIN animal_category l ON o.livestock_animal_id = l.livestock_animal_id WHERE l.user_id = ? OR u.user_id = ? ORDER BY o.updated_at DESC LIMIT 5;",
+    [req.params.id , req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+
+app.put("/updateNotif/:id", function (req, res) {
+  let notification = 0;
+  conn.query(
+    "UPDATE `order` SET notification = ? WHERE order_id = ?",
+    [notification, req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+
+app.get("/getUserByID/:id", function (req, res) {
+  conn.query(
+    "SELECT  * FROM `user` WHERE user_id = ?",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+        console.log(rows);
       }
     }
   );
