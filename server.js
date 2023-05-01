@@ -58,6 +58,8 @@ app.post("/user/login", function (req, res) {
   }
 });
 
+const upload = multer({ storage: multer.memoryStorage() });
+
 app.post("/user/register", function (req, res) {
   let progress = req.body.progress;
   let contacts = req.body.contacts;
@@ -103,7 +105,10 @@ app.post("/user/register", function (req, res) {
   }
 });
 
-app.post("/user/update", function (req, res) {
+app.put(
+  "/user/update",
+  upload.single("image"),
+ function (req, res) {
   let id = req.body.id;
   let progress = req.body.progress;
   let contacts = req.body.contacts;
@@ -112,10 +117,11 @@ app.post("/user/update", function (req, res) {
   let username = req.body.username;
   let password = req.body.password;
   let firstName = req.body.firstName;
-  let lastName = req.body.lastName;
+  let lastName = req.body.lastName; 
+  let photo = req.file ? req.file.buffer : null;
 
   conn.query(
-    "UPDATE user SET progress_id = ?, user_contacts = ?, user_address = ?, user_name = ?, user_email = ?, user_password = ?, first_name = ?, last_name = ? WHERE user_id = ?",
+    "UPDATE user SET progress_id = ?, user_contacts = ?, user_address = ?, user_name = ?, user_email = ?, user_password = ?, first_name = ?, last_name = ? , user_photo = ? WHERE user_id = ?",
     [
       progress,
       contacts,
@@ -125,6 +131,7 @@ app.post("/user/update", function (req, res) {
       password,
       firstName,
       lastName,
+      photo,
       id,
     ],
     function (error, rows, fields) {
@@ -354,7 +361,11 @@ app.get("/user/retrieve/:id", function (req, res) {
     function (error, rows, fields) {
       if (error) throw error;
       else {
-        res.send(rows);
+        const user = rows.map((row) => ({
+          ...row,
+          user_photo: row.user_photo?.toString("base64"),
+        }));
+        res.json({ user });
       }
     }
   );
@@ -443,8 +454,6 @@ app.get("/animal/retrieveByUser/:id", function (req, res) {
     }
   );
 });
-
-const upload = multer({ storage: multer.memoryStorage() });
 
 app.post("/animal/insertAnimal", upload.single("image"), function (req, res) {
   const toDate = new Date();
@@ -1019,6 +1028,7 @@ app.get("/order/getAllOrderBySeller/:id", function (req, res) {
 app.put("/order/toShipStatus/:id", function (req, res) {
   // BUYER: PENDING S: SEND ITEM B:TO SHIP B: COMPLETED S: COMPLETED
   let status = req.body.status;
+  let notification = 1;
   if (status === "Pending") {
     status = "To ship";
   }
@@ -1026,8 +1036,8 @@ app.put("/order/toShipStatus/:id", function (req, res) {
     status = "Completed";
   }
   conn.query(
-    "UPDATE `order` SET status = ? WHERE order_id = ?",
-    [status, req.params.id],
+    "UPDATE `order` SET status = ? , notification = ? WHERE order_id = ?",
+    [status,notification, req.params.id],
     function (error, rows, fields) {
       if (error) throw error;
       else {
@@ -1052,7 +1062,7 @@ app.get("/ratings/retrieveAll", function (req, res) {
 
 app.get("/getNotification/:id", function (req, res) {
   conn.query(
-    "SELECT  o.notification, o.order_id, o.order_number,o.status, o.price, o.quantity ,u.first_name, u.user_address, u.last_name, l.livestock_animal_name  FROM `order` o JOIN user u ON o.user_id = u.user_id JOIN animal_category l ON o.livestock_animal_id = l.livestock_animal_id WHERE l.user_id = ? OR u.user_id = ? ORDER BY o.updated_at DESC LIMIT 5;",
+    "SELECT o.user_id, o.notification, o.order_id, o.order_number,o.status, o.price, o.quantity ,u.first_name, u.user_address, u.last_name, l.livestock_animal_name  FROM `order` o JOIN user u ON o.user_id = u.user_id JOIN animal_category l ON o.livestock_animal_id = l.livestock_animal_id WHERE l.user_id = ? OR u.user_id = ? ORDER BY o.updated_at DESC LIMIT 5;",
     [req.params.id , req.params.id],
     function (error, rows, fields) {
       if (error) throw error;
