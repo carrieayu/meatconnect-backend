@@ -69,6 +69,7 @@ app.post("/user/register", function (req, res) {
   let password = req.body.password;
   let firstName = req.body.firstName;
   let lastName = req.body.lastName;
+  let photo = "test";
 
   if (
     contacts &&
@@ -80,7 +81,7 @@ app.post("/user/register", function (req, res) {
     lastName
   ) {
     conn.query(
-      "INSERT INTO user (progress_id, user_contacts, user_address, user_name, user_email, user_password, first_name, last_name) VALUES (?,?,?,?,?,?,?,?)",
+      "INSERT INTO user (progress_id, user_contacts, user_address, user_name, user_email, user_password, first_name, last_name, user_photo) VALUES (?,?,?,?,?,?,?,?,?)",
       [
         progress,
         contacts,
@@ -90,6 +91,7 @@ app.post("/user/register", function (req, res) {
         password,
         firstName,
         lastName,
+        photo,
       ],
       function (error, results, fields) {
         if (error) throw error;
@@ -105,10 +107,7 @@ app.post("/user/register", function (req, res) {
   }
 });
 
-app.put(
-  "/user/update",
-  upload.single("image"),
- function (req, res) {
+app.put("/user/update", upload.single("image"), function (req, res) {
   let id = req.body.id;
   let progress = req.body.progress;
   let contacts = req.body.contacts;
@@ -117,7 +116,7 @@ app.put(
   let username = req.body.username;
   let password = req.body.password;
   let firstName = req.body.firstName;
-  let lastName = req.body.lastName; 
+  let lastName = req.body.lastName;
   let photo = req.file ? req.file.buffer : null;
 
   conn.query(
@@ -607,20 +606,23 @@ app.get("/animal/retrieveByIdAndRatings/:id", function (req, res) {
 });
 
 app.get("/animal/retrieveAll/", function (req, res) {
-  conn.query("SELECT *FROM animal_category JOIN user ON animal_category.user_id = user.user_id;", function (error, rows, fields) {
-    if (error) {
-      console.error(error);
-      res.status(500).json({ error: "Error retrieving animals" });
-    } else {
-      // Map the rows to include the base64 encoded photo instead of the buffer
-      const animals = rows.map((row) => ({
-        ...row,
-        livestock_animal_photo: row.livestock_animal_photo.toString("base64"),
-      }));
+  conn.query(
+    "SELECT *FROM animal_category JOIN user ON animal_category.user_id = user.user_id;",
+    function (error, rows, fields) {
+      if (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error retrieving animals" });
+      } else {
+        // Map the rows to include the base64 encoded photo instead of the buffer
+        const animals = rows.map((row) => ({
+          ...row,
+          livestock_animal_photo: row.livestock_animal_photo.toString("base64"),
+        }));
 
-      res.json({ animals });
+        res.json({ animals });
+      }
     }
-  });
+  );
 });
 
 app.get("/comment/retrieveByAnimal/:id", function (req, res) {
@@ -1037,7 +1039,7 @@ app.put("/order/toShipStatus/:id", function (req, res) {
   }
   conn.query(
     "UPDATE `order` SET status = ? , notification = ? WHERE order_id = ?",
-    [status,notification, req.params.id],
+    [status, notification, req.params.id],
     function (error, rows, fields) {
       if (error) throw error;
       else {
@@ -1059,11 +1061,10 @@ app.get("/ratings/retrieveAll", function (req, res) {
   );
 });
 
-
 app.get("/getNotification/:id", function (req, res) {
   conn.query(
     "SELECT o.user_id, o.notification, o.order_id, o.order_number,o.status, o.price, o.quantity ,u.first_name, u.user_address, u.last_name, l.livestock_animal_name  FROM `order` o JOIN user u ON o.user_id = u.user_id JOIN animal_category l ON o.livestock_animal_id = l.livestock_animal_id WHERE l.user_id = ? OR u.user_id = ? ORDER BY o.updated_at DESC LIMIT 5;",
-    [req.params.id , req.params.id],
+    [req.params.id, req.params.id],
     function (error, rows, fields) {
       if (error) throw error;
       else {
@@ -1072,7 +1073,6 @@ app.get("/getNotification/:id", function (req, res) {
     }
   );
 });
-
 
 app.put("/updateNotif/:id", function (req, res) {
   let notification = 0;
@@ -1087,7 +1087,6 @@ app.put("/updateNotif/:id", function (req, res) {
     }
   );
 });
-
 
 app.get("/getUserByID/:id", function (req, res) {
   conn.query(
