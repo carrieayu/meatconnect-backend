@@ -564,7 +564,7 @@ app.delete("/animal/deleteAnimal/:id", function (req, res) {
 
 app.get("/animal/retrieveById/:id", function (req, res) {
   conn.query(
-    "SELECT * FROM animal_category where livestock_animal_id = ?",
+    "SELECT * FROM animal_category, user where livestock_animal_id = ? && animal_category.user_id = user.user_id",
     [req.params.id],
     function (error, rows, fields) {
       if (error) throw error;
@@ -794,7 +794,7 @@ app.post("/order/insertOrder/:id", function (req, res) {
   const created_at = new Date();
   const updated_at = new Date();
   conn.query(
-    "INSERT INTO `order`(order_number, user_id, livestock_animal_id, billing_id, quantity, price, status, arrived_date, created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)",
+    "INSERT INTO `order`(order_number, user_id, livestock_animal_id, billing_id, quantity, price, status, arrived_date, notification ,created_at, updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
     [
       order_number,
       parseInt(user_id, 10),
@@ -804,6 +804,7 @@ app.post("/order/insertOrder/:id", function (req, res) {
       price,
       "Pending",
       arrived_date,
+      1,
       created_at,
       updated_at,
     ],
