@@ -1102,3 +1102,16 @@ app.get("/getUserByID/:id", function (req, res) {
     }
   );
 });
+
+app.get("/getInvoice/:id", function (req, res) {
+  conn.query(
+    "SELECT a.livestock_animal_name, o.order_number, o.created_at, o.price, o.quantity, b.address, p.payment_type FROM billing b JOIN payment_method p ON p.payment_id = b.payment_id JOIN `order` o ON o.billing_id = b.billing_id JOIN animal_category a ON o.livestock_animal_id = a.livestock_animal_id WHERE o.order_id = ?",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
