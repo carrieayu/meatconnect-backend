@@ -1115,3 +1115,31 @@ app.get("/getInvoice/:id", function (req, res) {
     }
   );
 });
+
+
+app.put("/update/LiveStock/:id", function (req, res) {
+  let quantity = req.body.livestock_animal_stock;
+  conn.query(
+    "UPDATE animal_category SET livestock_animal_stock = livestock_animal_stock - ? WHERE livestock_animal_id = ?",
+    [quantity, req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+app.get("/salesHistory/:id", function (req, res) {
+  conn.query(
+    "SELECT a.livestock_animal_name, o.price, o.quantity, a.livestock_animal_stock FROM meatconnect.animal_category a JOIN meatconnect.order o WHERE a.user_id = ?",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
