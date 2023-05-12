@@ -605,6 +605,25 @@ app.get("/animal/retrieveByIdAndRatings/:id", function (req, res) {
   );
 });
 
+app.get("/animal/retrieveAllByStatus/", function (req, res) {
+  conn.query(
+    "SELECT * FROM animal_category INNER JOIN user ON user.user_id = animal_category.user_id WHERE animal_category.`status`= 1",
+    function (error, rows, fields) {
+      if (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error retrieving animals" });
+      } else {
+        const animals = rows.map((row) => ({
+          ...row,
+          livestock_animal_photo: row.livestock_animal_photo.toString("base64"),
+        }));
+
+        res.json({ animals });
+      }
+    }
+  );
+});
+
 app.get("/animal/retrieveAll/", function (req, res) {
   conn.query(
     "SELECT *FROM animal_category JOIN user ON animal_category.user_id = user.user_id;",
@@ -866,6 +885,21 @@ app.post("/order/insertOrder/:id", function (req, res) {
             }
           }
         );
+      }
+    }
+  );
+});
+
+app.put("/update/animalStatus/:user_id/:animal_id", function (req, res) {
+  conn.query(
+    "UPDATE animal_category SET `status` = ? WHERE user_id = ? AND livestock_animal_id = ?",
+    [1, req.params.user_id, req.params.animal_id],
+    function (error, rows, field) {
+      if (error) throw error;
+      else {
+        console.log(rows);
+        res.send(rows);
+        res.end();
       }
     }
   );
