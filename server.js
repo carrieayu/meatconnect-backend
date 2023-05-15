@@ -456,8 +456,15 @@ app.get("/animal/retrieveByUser/:id", function (req, res) {
 
 app.post("/animal/insertAnimal", upload.single("image"), function (req, res) {
   const toDate = new Date();
-  const { user_id, animal_name, animal_type, animal_detail, stock, price } =
-    req.body;
+  const {
+    user_id,
+    breeding_type,
+    animal_name,
+    animal_type,
+    animal_detail,
+    stock,
+    price,
+  } = req.body;
 
   const animal_photo = req.file ? req.file.buffer : null;
 
@@ -465,9 +472,10 @@ app.post("/animal/insertAnimal", upload.single("image"), function (req, res) {
   const updated_at = toDate;
 
   conn.query(
-    "INSERT INTO animal_category (user_id, livestock_animal_name, livestock_animal_type, livestock_animal_detail, livestock_animal_photo, livestock_animal_price, livestock_animal_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO animal_category (user_id, breeding_type, livestock_animal_name, livestock_animal_type, livestock_animal_detail, livestock_animal_photo, livestock_animal_price, livestock_animal_stock, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
       user_id,
+      breeding_type,
       animal_name,
       animal_type,
       animal_detail,
@@ -494,6 +502,7 @@ app.put(
   upload.single("image"),
   function (req, res) {
     const toDate = new Date();
+    const breeding_type = req.body.breeding_type;
     const animal_name = req.body.animal_name;
     const animal_type = req.body.animal_type;
     const animal_detail = req.body.animal_detail;
@@ -503,8 +512,9 @@ app.put(
     const updated_at = toDate;
 
     conn.query(
-      "UPDATE animal_category SET livestock_animal_name = ? , livestock_animal_type = ?, livestock_animal_detail = ?, livestock_animal_photo = ?, livestock_animal_price = ? , livestock_animal_stock =? , updated_at = ? WHERE livestock_animal_id = ? ",
+      "UPDATE animal_category SET breeding_type = ?,  livestock_animal_name = ? , livestock_animal_type = ?, livestock_animal_detail = ?, livestock_animal_photo = ?, livestock_animal_price = ? , livestock_animal_stock =? , updated_at = ? WHERE livestock_animal_id = ? ",
       [
+        breeding_type,
         animal_name,
         animal_type,
         animal_detail,
@@ -1150,6 +1160,25 @@ app.get("/getInvoice/:id", function (req, res) {
   );
 });
 
+app.get("/search/:searchString", function (req, res) {
+  conn.query(
+    `SELECT * FROM animal_category WHERE STATUS = 1 AND (livestock_animal_name LIKE '%${req.params.searchString}%' OR livestock_animal_type LIKE '%${req.params.searchString}%' OR livestock_animal_detail LIKE '%${req.params.searchString}%')`,
+    function (error, rows, fields) {
+      if (error) {
+        console.error(error);
+        res.status(500).json({ error: "Error retrieving animals" });
+      } else {
+        // Map the rows to include the base64 encoded photo instead of the buffer
+        const animals = rows.map((row) => ({
+          ...row,
+          livestock_animal_photo: row.livestock_animal_photo.toString("base64"),
+        }));
+
+        res.json({ animals });
+      }
+    }
+  );
+});
 
 app.put("/update/LiveStock/:id", function (req, res) {
   let quantity = req.body.livestock_animal_stock;
