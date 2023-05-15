@@ -1149,3 +1149,31 @@ app.get("/getInvoice/:id", function (req, res) {
     }
   );
 });
+
+
+app.put("/update/LiveStock/:id", function (req, res) {
+  let quantity = req.body.livestock_animal_stock;
+  conn.query(
+    "UPDATE animal_category SET livestock_animal_stock = livestock_animal_stock - ? WHERE livestock_animal_id = ?",
+    [quantity, req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+app.get("/salesHistory/:id", function (req, res) {
+  conn.query(
+    "SELECT a.livestock_animal_name, SUM(o.price * o.quantity) AS total_sales, (a.livestock_animal_stock - SUM(o.quantity)) AS remaining,livestock_animal_stock, a.livestock_animal_price, o.quantity FROM animal_category a JOIN `order` o ON a.livestock_animal_id = o.livestock_animal_id WHERE a.user_id = ? GROUP BY a.livestock_animal_id, o.quantity",
+    [req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
