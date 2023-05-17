@@ -58,6 +58,18 @@ app.post("/user/login", function (req, res) {
   }
 });
 
+app.get("/user/retrieveEmail/:email", function (req, res) {
+  conn.query(
+    "SELECT * FROM user WHERE user_email = ? ",
+    [req.params.email],
+    function (error, results, field) {
+      if (error) throw error;
+      else {
+        res.send(results[0]);
+      }
+    }
+  );
+});
 const upload = multer({ storage: multer.memoryStorage() });
 
 app.post("/user/register", function (req, res) {
@@ -1194,18 +1206,18 @@ app.put("/update/LiveStock/:id", function (req, res) {
   );
 });
 
-app.put("/user/updatePass/:email", function(req, res) {
+app.put("/user/updatePass/:email", function (req, res) {
   conn.query(
     "UPDATE user SET user_password = ? WHERE user_email = ?",
     [req.body.password, req.params.email],
-    function(error, rows, fields){
-      if(error) throw error;
-      else{
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
         res.send(rows);
       }
     }
-  )
-})
+  );
+});
 
 app.get("/salesHistory/:id", function (req, res) {
   conn.query(
@@ -1219,3 +1231,80 @@ app.get("/salesHistory/:id", function (req, res) {
     }
   );
 });
+
+app.get("/questions/retrieve", function (req, res) {
+  conn.query("SELECT * FROM question", function (error, rows, fields) {
+    if (error) throw error;
+    else {
+      res.send(rows);
+    }
+  });
+});
+
+app.post("/questions/checkAnswer/:id", function (req, res) {
+  conn.query(
+    "SELECT * FROM security_question WHERE id = ? AND answer = ?",
+    [req.params.id, req.body.answer],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+app.post("/security_question/insert/:question_id/:id", function (req, res) {
+  conn.query(
+    "INSERT INTO security_question(question_id, question_number, user_id, answer) VALUES(?,?,?,?)",
+    [req.params.question_id, req.body.number, req.params.id, req.body.answer],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+app.put("/security_question/update/:id", function (req, res) {
+  conn.query(
+    "UPDATE security_question SET answer = ?, question_id = ? WHERE id = ?",
+    [req.body.answer, req.body.question_id, req.params.id],
+    function (error, rows, fields) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+app.get("/security_question/retrieveByUser/:id", function (req, res) {
+  conn.query(
+    "SELECT * FROM security_question WHERE user_id = ? ORDER BY question_number",
+    [req.params.id],
+    function (error, rows, field) {
+      if (error) throw error;
+      else {
+        res.send(rows);
+      }
+    }
+  );
+});
+
+app.get(
+  "/security_question/retrieveByUserWithQuestion/:id",
+  function (req, res) {
+    conn.query(
+      "SELECT *, security_question.id AS seucrity_id FROM security_question INNER JOIN question ON question.id = security_question.question_id WHERE security_question.user_id = ? ORDER BY security_question.question_number",
+      [req.params.id],
+      function (error, rows, field) {
+        if (error) throw error;
+        else {
+          res.send(rows);
+        }
+      }
+    );
+  }
+);
